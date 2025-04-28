@@ -1,4 +1,17 @@
-body {
-  margin : 0;
-  padding: 0;
+@import url('antd/dist/reset.css');
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#playground {
+  width: 80vw;
+  height: fit-content;
+  border-radius: 8px;
+  border: 1px dashed var(--ant-color-border);
+  box-shadow: var(--ant-box-shadow-secondary);
 }

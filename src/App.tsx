@@ -2,7 +2,7 @@
 import * as d3 from 'd3';
 import { useEffect } from 'react';
 import fiare2 from './flare2.json';
-
+import classes from './style.module.css';
 export default function App() {
   const initial = () => {
     const el = document.querySelector('#playground') as HTMLDivElement;
@@ -13,14 +13,12 @@ export default function App() {
      */
 
     // Define chart's dimensions. create tree layout
-    const SIZES = {
-      WIDTH: rect.width,
-      HEIGHT: rect.height,
-      MARGIN_TOP: 10,
-      MARGIN_RIGHT: 10,
-      MARGIN_BOTTOM: 10,
-      MARGIN_LEFT: 40,
-    };
+
+    const WIDTH = rect.width;
+    const MARGIN_TOP = 10;
+    const MARGIN_RIGHT = 10;
+    const MARGIN_BOTTOM = 10;
+    const MARGIN_LEFT = 100;
 
     /**
      * Tree
@@ -29,9 +27,10 @@ export default function App() {
     // Mark js tree data to d3 formation tree data
     const root = d3.hierarchy<any>(fiare2);
     // Rows distance, dx is height
-    const dx = 20;
+    // dx is row gap between every items
+    const dx = 100;
     // Column distance, dy is width, column width is equal to tree height
-    const dy = (SIZES.WIDTH - SIZES.MARGIN_RIGHT - SIZES.MARGIN_LEFT) / (1 + root.height);
+    const dy = (WIDTH - MARGIN_RIGHT - MARGIN_LEFT) / (1 + root.height);
 
     // Define the tree layout and the shape for links.
     const tree = d3.tree<typeof fiare2>().nodeSize([dx, dy]);
@@ -42,14 +41,25 @@ export default function App() {
       .x((d: any) => d.y)
       .y((d: any) => d.x);
 
+    function _diagonal(link: any) {
+      const diagonal = d3
+        .linkHorizontal()
+        .x((d: any) => (d.y === link.source.y ? d.y + 90 : d.y))
+        .y((d: any) => d.x);
+
+      return diagonal(link);
+    }
+
     /**
      * SVG container, a layer (group) for the links and a layer for the nodes.
      */
     const svg = d3
       .create('svg')
-      .attr('width', SIZES.WIDTH)
+      .attr('width', WIDTH)
       .attr('height', dx)
-      .attr('viewBox', [-SIZES.MARGIN_LEFT, -SIZES.MARGIN_TOP, SIZES.WIDTH, dx]);
+      .attr('viewBox', [-MARGIN_LEFT, -MARGIN_TOP, WIDTH, dx]);
+
+    const rootGroup = svg.append('g');
 
     /**
      * Zoom
@@ -66,7 +76,7 @@ export default function App() {
     );
 
     // Link group
-    const gLink = svg
+    const gLink = rootGroup
       .append('g')
       .attr('fill', 'none')
       .attr('stroke', '#555')
@@ -74,11 +84,9 @@ export default function App() {
       .attr('stroke-width', 1.5);
 
     // Node group
-    const gNode = svg.append('g').attr('cursor', 'pointer').attr('pointer-events', 'all');
+    const gNode = rootGroup.append('g').attr('cursor', 'pointer').attr('pointer-events', 'all');
 
     function update(event: PointerEvent | null, source: any) {
-      console.log(source);
-
       // hold the alt key to slow down the transition
       const duration = event?.altKey ? 2500 : 250;
 
@@ -96,22 +104,26 @@ export default function App() {
         if (node.x > right.x) right = node;
       });
 
-      const height = right.x - left.x + SIZES.MARGIN_TOP + SIZES.MARGIN_BOTTOM;
+      const height = right.x - left.x + MARGIN_TOP + MARGIN_BOTTOM;
 
       const transition = svg
         .transition()
         .duration(duration)
         .attr('height', height)
-        .attr('viewBox', [-SIZES.MARGIN_LEFT, left.x - SIZES.MARGIN_TOP, SIZES.WIDTH, height] as any)
+        .attr('viewBox', [-MARGIN_LEFT, left.x - MARGIN_TOP, WIDTH, height] as any)
         .tween('resize', window.ResizeObserver ? null : () => () => svg.dispatch('toggle'));
 
       // Update the nodes…
-      const node = gNode.selectAll('g').data(nodes, (d) => d.id);
+      const node = gNode
+        .selectAll('g')
+        .data(nodes, (d) => d.id)
+        .attr('width', 200);
 
       // Enter any new nodes at the parent's previous position.
       const nodeEnter = node
         .enter()
         .append('g')
+        .attr('class', classes.node)
         .attr('transform', (d) => `translate(${source.y0},${source.x0})`)
         .attr('fill-opacity', 0)
         .attr('stroke-opacity', 0)
@@ -120,16 +132,23 @@ export default function App() {
           update(event, d);
         });
 
+      // Container
+      nodeEnter.append('rect').attr('width', 180).attr('height', 70).attr('x', -90).attr('y', -35);
+
+      // Identifier
+      nodeEnter.append('circle');
+
+      // Children length
       nodeEnter
-        .append('circle')
-        .attr('r', 2.5)
-        .attr('fill', (d) => (d._children ? '#555' : '#999'))
-        .attr('stroke-width', 10);
+        .append('text')
+        .attr('data-children', '')
+        .attr('dy', '5')
+        .text((d) => (d.children ? d.children.length : d._children?.length ?? ''));
 
       nodeEnter
         .append('text')
         .attr('dy', '0.31em')
-        .attr('x', (d) => (d._children ? -6 : 6))
+        .attr('x', (d) => (d._children ? -11 : 11))
         .attr('text-anchor', (d) => (d._children ? 'end' : 'start'))
         .text((d) => d.data.name)
         .attr('stroke-linejoin', 'round')
@@ -163,11 +182,16 @@ export default function App() {
         .append('path')
         .attr('d', (d) => {
           const o = { x: source.x0, y: source.y0 };
-          return diagonal({ source: o, target: o });
+          return _diagonal({ source: o, target: o });
         });
 
       // Transition links to their new position.
-      link.merge(linkEnter).transition(transition).attr('d', diagonal);
+      link
+        .merge(linkEnter)
+        .transition(transition)
+        .attr('d', (link) => {
+          return _diagonal(link);
+        });
 
       // Transition exiting nodes to the parent's new position.
       link
@@ -176,7 +200,7 @@ export default function App() {
         .remove()
         .attr('d', (d) => {
           const o = { x: source.x, y: source.y };
-          return diagonal({ source: o, target: o });
+          return _diagonal({ source: o, target: o });
         });
 
       // Stash the old positions for transition.

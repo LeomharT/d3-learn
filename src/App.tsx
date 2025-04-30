@@ -33,7 +33,7 @@ export default function App() {
     const dy = (WIDTH - MARGIN_RIGHT - MARGIN_LEFT) / (1 + root.height);
 
     // Define the tree layout and the shape for links.
-    const tree = d3.tree<typeof fiare2>().nodeSize([dx, dy]);
+    const tree = d3.tree<typeof fiare2>().nodeSize([dx, dy + 180]);
 
     // Links
     const diagonal = d3
@@ -44,7 +44,11 @@ export default function App() {
     function _diagonal(link: any) {
       const diagonal = d3
         .linkHorizontal()
-        .x((d: any) => (d.y === link.source.y ? d.y + 90 : d.y))
+        .x((d: any) => {
+          if (d.y === link.source.y) return d.y + 90;
+          if (d.y === link.target.y) return d.y - 90;
+          return d.y;
+        })
         .y((d: any) => d.x);
 
       return diagonal(link);

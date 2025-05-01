@@ -1,8 +1,10 @@
 //@ts-nocheck
+import { Drawer } from 'antd';
 import * as d3 from 'd3';
 import { useEffect } from 'react';
-import fiare2 from './flare2.json';
+import data from './placehold.json';
 import classes from './style.module.css';
+
 export default function App() {
   const initial = () => {
     const el = document.querySelector('#playground') as HTMLDivElement;
@@ -25,7 +27,7 @@ export default function App() {
      */
 
     // Mark js tree data to d3 formation tree data
-    const root = d3.hierarchy<any>(fiare2);
+    const root = d3.hierarchy<any>(data);
     // Rows distance, dx is height
     // dx is row gap between every items
     const dx = 100;
@@ -33,14 +35,9 @@ export default function App() {
     const dy = (WIDTH - MARGIN_RIGHT - MARGIN_LEFT) / (1 + root.height);
 
     // Define the tree layout and the shape for links.
-    const tree = d3.tree<typeof fiare2>().nodeSize([dx, dy + 180]);
+    const tree = d3.tree().nodeSize([dx, dy + 180]);
 
     // Links
-    const diagonal = d3
-      .linkHorizontal()
-      .x((d: any) => d.y)
-      .y((d: any) => d.x);
-
     function _diagonal(link: any) {
       const diagonal = d3
         .linkHorizontal()
@@ -59,6 +56,7 @@ export default function App() {
      */
     const svg = d3
       .create('svg')
+      .attr('xmlns', 'http://www.w3.org/1999/xhtml')
       .attr('width', WIDTH)
       .attr('height', dx)
       .attr('viewBox', [-MARGIN_LEFT, -MARGIN_TOP, WIDTH, dx]);
@@ -131,13 +129,13 @@ export default function App() {
         .attr('transform', (d) => `translate(${source.y0},${source.x0})`)
         .attr('fill-opacity', 0)
         .attr('stroke-opacity', 0)
-        .on('click', (event, d) => {
+        .on('dblclick', (event, d) => {
           d.children = d.children ? null : d._children;
           update(event, d);
+        })
+        .on('contextmenu', (e: MouseEvent, d) => {
+          e.preventDefault();
         });
-
-      // Container
-      nodeEnter.append('rect').attr('width', 180).attr('height', 70).attr('x', -90).attr('y', -35);
 
       // Identifier
       nodeEnter.append('circle');
@@ -146,19 +144,22 @@ export default function App() {
       nodeEnter
         .append('text')
         .attr('data-children', '')
+        .attr('dx', 102)
         .attr('dy', '5')
         .text((d) => (d.children ? d.children.length : d._children?.length ?? ''));
 
+      // Container
       nodeEnter
-        .append('text')
-        .attr('dy', '0.31em')
-        .attr('x', (d) => (d._children ? -11 : 11))
-        .attr('text-anchor', (d) => (d._children ? 'end' : 'start'))
-        .text((d) => d.data.name)
-        .attr('stroke-linejoin', 'round')
-        .attr('stroke-width', 3)
-        .attr('stroke', 'white')
-        .attr('paint-order', 'stroke');
+        .append('foreignObject')
+        .attr('class', (d) => classes[`depth${d.depth}`])
+        .attr('width', 180)
+        .attr('height', 70)
+        .attr('x', -90)
+        .attr('y', -35)
+        .append('xhtml:div')
+        .attr('class', classes.content)
+        .append('xhtml:span')
+        .text((d) => d.data.name);
 
       // Transition nodes to their new position.
       const nodeUpdate = node
@@ -233,5 +234,9 @@ export default function App() {
     initial();
   }, []);
 
-  return <div id='playground'></div>;
+  return (
+    <div id='playground'>
+      <Drawer />
+    </div>
+  );
 }

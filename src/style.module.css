@@ -1,18 +1,14 @@
 .node {
   & circle {
-    r: 8;
+    r: 12;
     fill: #ffffff;
     stroke: #f0f0f0;
     stroke-width: 2;
+    cx: calc(90 + 12);
   }
 
-  & rect {
-    fill: transparent;
-    stroke: var(--ant-color-border);
-    stroke-width: 3;
-    stroke-dasharray: 3;
-    rx: 8;
-    ry: 8;
+  & foreignObject {
+    border-radius: 8px;
   }
 
   & text[data-children] {
@@ -20,5 +16,38 @@
     text-anchor: middle;
     font-size: 12px;
     fill: var(--ant-color-primary);
+    font-weight: bold;
   }
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding-inline: 12px;
+  justify-content: start;
+  align-items: center;
+  white-space: nowrap;
+
+  & > span {
+    width: 100%;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    text-align: center;
+    overflow: hidden;
+  }
+}
+
+.depth0 {
+  background: var(--ant-color-bg-container);
+  border: 3px solid var(--ant-color-primary);
+  color: var(--ant-color-primary);
+}
+.depth1 {
+  background: var(--ant-color-primary);
+  color: #ffffff;
+}
+.depth2 {
+  background: var(--ant-color-primary-bg);
+  color: var(--ant-color-primary);
 }

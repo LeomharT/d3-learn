@@ -16,6 +16,6 @@
   box-shadow: var(--ant-box-shadow-secondary);
 
   > svg {
-    min-height: 350px;
+    min-height: 550px;
   }
 }
